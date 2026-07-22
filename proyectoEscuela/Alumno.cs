@@ -6,17 +6,15 @@ namespace UniversidadPOO
 {
     public class Alumno : Persona
     {
-        public string Carrera { get; set; }
+        public int CarreraId { get; set; }
+        public int GrupoId { get; set; }
+        public string NombreCarrera { get; set; }
         public int AñoCursado { get; set; }
         public override void MostrarInformacion()
         {
-            Console.WriteLine($"\n--- ALUMNO ---");
-            Console.WriteLine($"Nombre: {Nombre} {Apellido}");
-            Console.WriteLine($"Edad: {Edad}");
-            Console.WriteLine($"Documento: {Documento}");
-            Console.WriteLine($"Carrera: {Carrera}");
-            Console.WriteLine($"Añocursado: {AñoCursado}");
-            Console.WriteLine("--------------------------");
+            Console.WriteLine($"ALUMNO - ID: {Id}");
+            base.MostrarInformacion();
+            Console.WriteLine($"ID Carrera: {CarreraId}");
         }
     }
 }

@@ -1,0 +1,38 @@
+body{
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: white;
+    margin: 20px;
+}
+
+h1{
+    color: black;
+}
+
+#Agregados, #Listas{
+    background-color: antiquewhite;
+    padding: 20px;
+    border: 1px;
+    width: 200px;
+    margin-bottom: 20px;
+}
+
+button{
+    background-color: aqua;
+    color:white;
+    padding: 8px 12px;
+    border:none;
+
+}
+
+button :hover{
+    background-color: black;
+}
+
+#btnCargarDatos{
+    background-color: yellowgreen;
+}
+
+input{
+    padding: 5px;
+    width:90%;
+}

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Data.SqlClient;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,105 +9,131 @@ namespace UniversidadPOO
 {
     public class RepositorioProfesor
     {
-        private List<Profesor> profesores = new List<Profesor>();
-        private RepositorioCarreras repoCarreras = new RepositorioCarreras();
-        private RepositorioMaterias repoMaterias = new RepositorioMaterias();
-        private RepositorioExperienciaProfesor repoExperiencia = new RepositorioExperienciaProfesor();
-
-        public void RegistrarProfesor()
+        public void AgregarProfesor(Profesor profe)
         {
-            Console.Clear();
-            Console.WriteLine("=== REGISTRO DE PROFESOR ===");
-
-            Profesor profesor = new Profesor();
-            Console.Write("Nombre: ");
-            profesor.Nombre = Console.ReadLine();
-            Console.Write("Apellido: ");
-            profesor.Apellido = Console.ReadLine();
-            Console.Write("Edad: ");
-            profesor.Edad = ValidarNumero("Edad");
-            Console.WriteLine("Documento: ");
-            profesor.Documento = Console.ReadLine();
-
-            var carreras = repoCarreras.ObtenerCarreras();
-
-            Console.WriteLine("\n=== CARRERAS DISPONIBLES ===");
-            foreach (var c in carreras)
-                Console.WriteLine($"{c.Id}. {c.Nombre}");
-            Console.WriteLine("Seleccione carrera: ");
-            int id = ValidarNumero("Carrera");
-
-            var carreraSeleccionada = carreras.Find(c => c.Id == id);
-            if (carreraSeleccionada == null)
+            using (var con = DB.GetConnection())
             {
-                Console.WriteLine("Carrera invalida.");
-                return;
+                con.Open();
+                using (SqlTransaction transaccion = con.BeginTransaction())
+                {
+                    try
+                    {
+                        string queryProf = "INSERT INTO Profesores (Nombre, Apellido, Edad, AñosExperiencia, MateriaId) " + "OUTPUT INSERTED.Id VALUES (@nom, @ape, @eda, @exp, @matId)";
+
+                        int nuevoProfesorId;
+                        using (SqlCommand cmd = new SqlCommand(queryProf, con, transaccion))
+                        {
+
+                            cmd.Parameters.AddWithValue("@nom", profe.Nombre);
+                            cmd.Parameters.AddWithValue("@ape", profe.Apellido);
+                            cmd.Parameters.AddWithValue("@eda", profe.Edad);
+                            cmd.Parameters.AddWithValue("@exp", profe.AñosExperiencia);
+                            cmd.Parameters.AddWithValue("@matId", profe.MateriaId);
+                            nuevoProfesorId = (int)cmd.ExecuteScalar();
+                        }
+
+                        string queryPuente = "INSERT INTO Profesores_Grupos (ProfesorId, GrupoId) VALUES (@profId, @grupId)";
+                        if (profe.GruposIds != null && profe.GruposIds.Count > 0)
+                        {
+                            foreach (int idDelGrupo in profe.GruposIds)
+                            {
+                                using (SqlCommand cmdPuente = new SqlCommand(queryPuente, con, transaccion))
+                                {
+                                    cmdPuente.Parameters.AddWithValue("@profId", nuevoProfesorId);
+                                    cmdPuente.Parameters.AddWithValue("@grupId", idDelGrupo);
+                                    cmdPuente.ExecuteNonQuery();
+                                }
+                            }
+                        }
+                        transaccion.Commit();
+                    }
+                    catch (Exception ex)
+                    {
+                        transaccion.Rollback();
+                        throw new Exception("Error al guardar el profesor: " + ex.Message);
+                    }
+                }
             }
-            profesor.Carrera = carreraSeleccionada.Nombre;
-
-            var materias = repoMaterias.ObtenerMateriasPorCarrera(carreraSeleccionada.Nombre);
-
-            Console.WriteLine("\n === MATERIAS DISPONIBLES ===");
-            for (int i = 0; 1 < materias.Count; i++)
-                Console.WriteLine($"{i + 1}. {materias[i]}");
-            Console.WriteLine("Seleccione materia: ");
-            int idMateria = ValidarNumero("Materia");
-            if (idMateria < 1 || idMateria > materias.Count)
-            {
-                Console.WriteLine("Materia invalida.");
-                return;
-            }
-
-            profesor.Materia = materias[idMateria - 1];
-            int exp = repoExperiencia.CalcularExperiencia(profesor);
-
-            if (exp < 0)
-                return;
-
-            profesor.AñosExperiencia = exp;
-            profesores.Add(profesor);
-            Console.WriteLine("Profesor registrado.");
-            Console.ReadKey();
-        }
-        public void ListarProfesores()
-        {
-            Console.Clear();
-
-            if (profesores.Count == 0)
-            {
-                Console.WriteLine("No hay profesores registrados.");
-            }
-            else
-            {
-                foreach (var p in profesores)
-                    p.MostrarInformacion();
-            }
-            Console.ReadKey();
         }
 
-        public List<Profesor> ObtenerLista()
+        public List<Profesor> ObtenerProfesores()
         {
-            return profesores;
+            List<Profesor> lista = new List<Profesor>();
+            using (var con = DB.GetConnection())
+            {
+                con.Open();
+                string query = "SELECT Id, Nombre, Apellido, Edad, AñosExperiencia, MateriaId FROM Profesores";
+                using (SqlCommand cmd = new SqlCommand(query, con))
+                {
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            lista.Add(new Profesor
+                            {
+                                Id = Convert.ToInt32(reader["Id"]),
+                                Nombre = reader["Nombre"].ToString(),
+                                Apellido = reader["Apellido"].ToString(),
+                                Edad = Convert.ToInt32(reader["Edad"]),
+                                AñosExperiencia = Convert.ToInt32(reader["AñosExperiencia"]),
+                                MateriaId = Convert.ToInt32(reader["MateriaId"])
+                            });
+                        }
+                    }
+                }
+            }
+            return lista;
         }
 
-        private int ValidarNumero(string campo)
+        public Profesor ObtenerPorId(int id)
         {
-            int numero;
-            while (!int.TryParse(Console.ReadLine(), out numero))
-                Console.WriteLine($"Valor invalido ({campo}). Intente de nuevo: ");
-            return numero;
+            Profesor prof = null;
+            using (var con = DB.GetConnection())
+            {
+                con.Open();
+                string query = "SELECT Id, Nombre, Apellido, Edad, AñosExperiencia, MateriaId FROM Profesores WHERE Id = @id";
+                using (SqlCommand cmd = new SqlCommand(query, con))
+                {
+                    cmd.Parameters.AddWithValue("@id", id);
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        if (reader.Read())
+                        {
+                            prof = new Profesor
+                            {
+                                Id = Convert.ToInt32(reader["Id"]),
+                                Nombre = reader["Nombre"].ToString(),
+                                Apellido = reader["Apellido"].ToString(),
+                                Edad = Convert.ToInt32(reader["Edad"]),
+                                AñosExperiencia = Convert.ToInt32(reader["AñosExperiencia"]),
+                                MateriaId = Convert.ToInt32(reader["MateriaId"])
+                            };
+                        }
+                    }
+                }
+            }
+            return prof;
+        }
+
+        public void Agregar(Profesor nuevoProfesor)
+        {
+            using (var con = DB.GetConnection())
+            {
+                con.Open();
+
+                string query = "INSERT INTO Profesores (Nombre, Apellido, Edad, AñosExperiencia, MateriaId) " +
+                    "VALUES (@Nombre, @Apellido, @Edad, @Experiencia, @MateriaId)";
+
+                using (SqlCommand cmd = new SqlCommand(query, con))
+                {
+                    cmd.Parameters.AddWithValue("@Nombre", nuevoProfesor.Nombre);
+
+                    cmd.Parameters.AddWithValue("@Apellido", string.IsNullOrEmpty(nuevoProfesor.Apellido) ? "Sin Asignar" : nuevoProfesor.Apellido);
+                    cmd.Parameters.AddWithValue("@Edad", nuevoProfesor.Edad == 0 ? 30 : nuevoProfesor.Edad);
+                    cmd.Parameters.AddWithValue("@Experiencia", nuevoProfesor.AñosExperiencia == 0 ? 1 : nuevoProfesor.AñosExperiencia);
+                    cmd.Parameters.AddWithValue("@MateriaId", nuevoProfesor.MateriaId == 0 ? 1 : nuevoProfesor.MateriaId);
+                }
+            }
         }
     }
 }
-
-        
-
-
-
-
-
-
-
-
-
-           

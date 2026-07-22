@@ -1,69 +1,61 @@
-﻿using System;
+﻿using Microsoft.Data.SqlClient;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace UniversidadPOO
 {
     public class RepositorioDocumentosProfesor
     {
-        private Dictionary<string, List<string>> documentos = new();
-        private List<string> Requeridos = new List<string>()
+        public void AgregarDocumento(Documento doc)
         {
-            "Titulo Profesional",
-            "Cedula Profesional",
-            "Curriculum Vitae",
-            "Carta de No Antecedentes Penales",
-            "Comprobante de Experiencia Laboral",
-        };
-
-        public void RegistrarDocumentosProfesor(Profesor profesor)
-        {
-            Console.Clear();
-            Console.WriteLine($"=== DOCUMENTOS DEL PROFESOR: {profesor.Nombre} ===");
-            List<string> entregados = new();
-            foreach (var doc in Requeridos)
+            using (var con = DB.GetConnection())
             {
-                Console.WriteLine($"\n¿El profesor entrego {doc}? (S/N): ");
-                var k = Console.ReadKey(true).Key;
-
-                if (k == ConsoleKey.S) entregados.Add(doc);
-            }
-            documentos[profesor.Documento] = entregados;
-            Console.WriteLine("\nDocumentos guardados.");
-            Console.ReadKey();
-        }
-        public void VerificarDocumentos(Profesor profesor)
-        {
-            Console.Clear();
-            Console.WriteLine($"=== DOCUMENTOS DE {profesor.Nombre} ===");
-
-            if (!documentos.ContainsKey(profesor.Documento))
-            {
-                Console.WriteLine("No hay documentos.");
-                Console.ReadKey();
-                return;
-            }
-            var entregados = documentos[profesor.Documento];
-
-            foreach (var doc in Requeridos)
-            {
-                bool existe = false;
-                foreach (var e in entregados)
+                con.Open();
+                string query = "INSERT INTO DocumentosProfesores (NombreDocumento, Estado, FechaEntrega, ProfesorId) " + "VALUES (@nom,@est,@fecha,@profId)";
+                using (SqlCommand cmd = new SqlCommand(query, con))
                 {
-                    if (e.Contains(doc))
+                    cmd.Parameters.AddWithValue("@nom", doc.Nombre);
+                    cmd.Parameters.AddWithValue("@est", doc.Estado);
+                    cmd.Parameters.AddWithValue("@fecha", doc.FechaEntrega);
+                    cmd.Parameters.AddWithValue("@profId", doc.PersonaId);
+                    cmd.ExecuteNonQuery();
+                }
+            }
+        }
+        public List<Documento> ObtenerDocumentosPorProfesor(int profesorId)
+        {
+            List<Documento> lista = new List<Documento>();
+            using (var con = DB.GetConnection())
+            {
+                con.Open();
+                string query = "SELECT * FROM DocumentosProfesores WHERE ProfesorId = @id";
+                using (SqlCommand cmd = new SqlCommand(query, con))
+                {
+                    cmd.Parameters.AddWithValue("@id", profesorId);
+                    using (SqlDataReader reader = cmd.ExecuteReader())
                     {
-                        Console.WriteLine($" {e}");
-                        existe = true;
+                        while (reader.Read())
+                        {
+                            lista.Add(new Documento
+                            {
+                                Id = Convert.ToInt32(reader["Id"]),
+                                Nombre = reader["NombreDocumento"].ToString(),
+                                Estado = reader["Estado"].ToString(),
+                                FechaEntrega = Convert.ToDateTime(reader["FechaEntrega"]),
+                                PersonaId = Convert.ToInt32(reader["ProfesorId"])
+                            });
+                        }
                     }
                 }
-                if (!existe) Console.WriteLine($"{doc}");
-                Console.WriteLine($" {doc} ");
             }
-            Console.ReadKey();
+            return lista;
         }
     }
 }
+               

@@ -1,0 +1,12 @@
+<div id="Alumnos">
+    <h3>Registrar Alumno</h3>
+
+    <input type="text" #nombreInput placeholder="Nombre Completo">
+    <br><br>
+    <input type="number" #idInput placeholder="ID">
+    <br><br>
+
+    <button id="btnGuardar" (click)="guardarAlumno(nombreInput.value, idInput.value)">
+        Guardar Alumno
+    </button>
+</div>

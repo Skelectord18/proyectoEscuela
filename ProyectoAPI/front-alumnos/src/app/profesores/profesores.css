@@ -1,0 +1,40 @@
+#Profesores{
+    max-width: 400px;
+    margin: 50px auto;
+    padding: 30px;
+    background-color: white;
+    border-radius: 12px;
+    text-align: center;
+    font-family: Arial, Helvetica, sans-serif;
+    border: 1px;
+}
+
+#Profesores h3{
+    color:blue;
+    margin-top: 0;
+    margin-bottom: 25px;
+    font-size: 20px;
+}
+
+#btnGuardarProfesor{
+    background-color: forestgreen;
+    color: white;
+    border: none;
+    padding: 14px 20px;
+    font-size: 16px;
+    font-weight: bold;
+    border-radius: 8px;
+    cursor: pointer;
+    width: 96%;
+}
+
+#btnGuardarProfesor:hover{
+    background-color:blueviolet;
+}
+
+#input{
+    background-color: white;
+    color:black;
+    margin-top: 0;
+    font-size: 20px;
+}

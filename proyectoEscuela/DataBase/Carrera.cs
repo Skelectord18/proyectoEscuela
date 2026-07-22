@@ -1,0 +1,9 @@
+namespace UniversidadPOO
+{
+    public class Carrera
+    {
+        public int Id { get; set; }
+        public string Nombre { get; set; }
+        public int MaxAños { get; set; }
+    }
+}

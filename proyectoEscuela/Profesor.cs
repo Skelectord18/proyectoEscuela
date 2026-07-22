@@ -8,20 +8,17 @@ namespace UniversidadPOO
 {
     public class Profesor : Persona
     {
-        public string Materia { get; set; } = "";
-        public string Carrera { get; set; }
+        public int MateriaId { get; set; }
         public int AñosExperiencia { get; set; }
+        public List<int> GruposIds { get; set; } = new List<int>();
         public override void MostrarInformacion()
         {
             Console.WriteLine("\n--- DATOS DEL PROFESOR ---");
-            Console.WriteLine($"Nombre: {Nombre} {Apellido}");
-            Console.WriteLine($"Edad: {Edad}");
-            Console.WriteLine($"Documento: {Documento}");
-            Console.WriteLine($"Carrera: {Carrera}");
-            Console.WriteLine($"Materia: {Materia}");
-            Console.WriteLine($"Años de experiencia: {AñosExperiencia}");
+            base.MostrarInformacion();
+            Console.WriteLine($"ID Materia asignada: {MateriaId}");
+            Console.WriteLine($"Años de Experiencia: {AñosExperiencia}");
         }
     }
 }
 
-    
+

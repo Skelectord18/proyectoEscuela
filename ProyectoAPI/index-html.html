@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="es">
+    <head>
+        <meta charset="UTF-8">
+        <title> ProyectoUniversidad</title>
+        <link rel="stylesheet"href=CSS.css>
+    </head>
+    <body>
+        <h1>Registro de Alumnos</h1>
+
+        <div id "Agregados">
+            <h3>AgregarAlumno</h3>
+            <input type="text"
+            id="NombreInput" placeholder="NombreCompleto">
+            <br><br>
+            <input type="text"
+            id="MatriculaInput" placeholder="Matricula / ID">
+            <br><br>
+            <button id="btnGuardar">GuardarRegistro</button>
+        </div>
+
+        <hr>
+        <div id "Listas">
+            <h3>ListasDeRegistros</h3>
+            <button id="btnCargarDatos">Cargar Datos de la API</button>
+            <ul id="ListaResultados"></ul>
+        </div>
+
+        <script src=app.js></script>
+    </body>
+</html>/

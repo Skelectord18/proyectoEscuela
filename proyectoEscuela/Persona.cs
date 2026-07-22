@@ -6,13 +6,17 @@ using System.Threading.Tasks;
 
 namespace UniversidadPOO
 {
-    public abstract class Persona
+    public class Persona
     {
+        public int Id { get; set; }
         public string Nombre { get; set; }
         public string Apellido { get; set; }
         public int Edad { get; set; }
-        public string Documento { get; set; }
-
-        public abstract void MostrarInformacion();
+        public virtual void MostrarInformacion()
+        {
+            Console.WriteLine($"Nombre : {Nombre}");
+            Console.WriteLine($"Apellido : {Apellido}");
+            Console.WriteLine($"Edad : {Edad}");
+        }
     }
 }

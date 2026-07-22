@@ -2,85 +2,121 @@
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography.X509Certificates;
+using System.Configuration;
+using Microsoft.Data.SqlClient;
 
 namespace UniversidadPOO
 {
     public class RepositorioAlumno
     {
-        private List<Alumno> alumnos = new List<Alumno>();
-        private RepositorioCarreras repoCarrera = new RepositorioCarreras();
-        public void AgregarAlumno()
+        public void AgregarAlumno(Alumno alumno)
         {
-            Console.Clear();
-            Console.WriteLine("=== REGISTRO DE ALUMNO ===");
-
-            Alumno alumno = new Alumno();
-            Console.WriteLine("Nombre: ");
-            alumno.Nombre = Console.ReadLine();
-            Console.WriteLine("Apellido: ");
-            alumno.Apellido = Console.ReadLine();
-            Console.WriteLine("Edad: ");
-            alumno.Edad = ValidarNumero("Edad");
-            Console.WriteLine("Documento ");
-            alumno.Documento = Console.ReadLine();
-
-            var carreras = repoCarrera.ObtenerCarreras();
-            Console.WriteLine("\n=== CARRERAS DISPONIBLES ===");
-            foreach (var c in carreras)
-
-                Console.WriteLine($"{c.Id}. {c.Nombre} (Max años: {c.MaxAños})");
-            Console.WriteLine("\nSeleccione carrera: ");
-            int idCarrera = ValidarNumero("Carrera");
-
-            var carreraSeleccionada = carreras.Find(c => c.Id == idCarrera);
-            if (carreraSeleccionada == null)
+            using (var con = DB.GetConnection())
             {
-                Console.WriteLine("Carrera invalida.");
-                return;
+                try
+                {
+                    con.Open();
+                    string query = "INSERT INTO Alumnos (Nombre,Apellido,Edad,CarreraId,GrupoId) VALUES (@nom,@ape,@eda,@carId,@grupId)";
+                    using (SqlCommand cmd = new SqlCommand(query, con))
+                    {
+                        cmd.Parameters.Add(new SqlParameter("@nom", alumno.Nombre));
+                        cmd.Parameters.Add(new SqlParameter("@ape", alumno.Apellido));
+                        cmd.Parameters.Add(new SqlParameter("@eda", alumno.Edad));
+                        cmd.Parameters.Add(new SqlParameter("@carId", alumno.CarreraId));
+                        cmd.Parameters.Add(new SqlParameter("@grupId", alumno.GrupoId));
+                        cmd.ExecuteNonQuery();
+                    }
+                }
+                catch (SqlException ex)
+                {
+                    if (ex.Number == 547)
+                    {
+                        throw new Exception("Error: La carrera ingresada no existe en la base de datos.");
+                    }
+                    throw ex;
+                }
             }
-            alumno.Carrera = carreraSeleccionada.Nombre;
-
-            Console.WriteLine($"Año cursado (1-{carreraSeleccionada.MaxAños}): ");
-            int año = ValidarNumero("Año cursado");
-            if (año < 1 || año > carreraSeleccionada.MaxAños)
-            {
-                Console.WriteLine("Año invalido.");
-                return;
-            }
-
-            alumno.AñoCursado = año;
-            alumnos.Add(alumno);
-            Console.WriteLine("Alumno registrado.");
-            Console.ReadKey();
         }
-        public void ListarAlumnos()
+        public List<Alumno> ObtenerAlumnos()
         {
-            Console.Clear();
-            if (alumnos.Count == 0)
+            List<Alumno> lista = new List<Alumno>();
+            using (var con = DB.GetConnection())
             {
-                Console.WriteLine("No hay alumno registrados.");
+                con.Open();
+                string query = "SELECT Id,Nombre,Apellido,Edad,CarreraId,GrupoId FROM Alumnos";
+                using (SqlCommand cmd = new SqlCommand(query, con))
+                {
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        while
+                            (reader.Read())
+                        {
+                            lista.Add(new Alumno
+                            {
+                                Id = Convert.ToInt32(reader["Id"]),
+                                Nombre = reader["Nombre"].ToString(),
+                                Apellido = reader["Apellido"].ToString(),
+                                Edad = Convert.ToInt32(reader["Edad"]),
+                                CarreraId = Convert.ToInt32(reader["CarreraId"]),
+                                GrupoId = reader["GrupoId"] != DBNull.Value ? Convert.ToInt32(reader["GrupoId"]) : 0
+                            });
+                        }
+                    }
+                }
             }
-            else
+            return lista;
+        }
+        public Alumno ObtenerPorId(int id)
+        {
+            Alumno al = null;
+            using (var con = DB.GetConnection())
             {
-                foreach (var a in alumnos)
-                    a.MostrarInformacion();
+                con.Open();
+                string query = "SELECT Id,Nombre,Apellido,Edad,CarreraId,GrupoId FROM Alumnos WHERE Id = @id";
+                using (SqlCommand cmd = new SqlCommand(query, con))
+                {
+                    cmd.Parameters.Add(new SqlParameter("@id", id));
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        if (reader.Read())
+                        {
+                            al = new Alumno
+                            {
+                                Id = Convert.ToInt32(reader["Id"]),
+                                Nombre = reader["Nombre"].ToString(),
+                                Apellido = reader["Apellido"].ToString(),
+                                Edad = Convert.ToInt32(reader["Edad"]),
+                                CarreraId = Convert.ToInt32(reader["CarreraId"]),
+                                GrupoId = reader["GrupoId"] != DBNull.Value ? Convert.ToInt32(reader["GrupoId"]) : 0
+                            };
+                        }
+                    }
+                }
             }
-            Console.ReadKey();
+            return al;
         }
-        public List<Alumno> ObtenerLista()
+        public void Agregar(Alumno nuevoAlumno)
         {
-            return alumnos;
-        }
-        private int ValidarNumero(string campo)
-        {
-            int numero;
-            while (!int.TryParse(Console.ReadLine(), out numero))
-                Console.WriteLine($"Valor invalido ({campo}). Intente de nuevo: ");
-                    return numero;
+            using (var con = DB.GetConnection())
+            {
+                con.Open();
+
+                string query = "INSERT INTO Alumnos (Nombre, Apellido, Edad, CarreraId, GrupoId) " +
+                               "VALUES (@Nombre, @Apellido, @Edad, @CarreraId, @GrupoId)";
+
+                using (SqlCommand cmd = new SqlCommand(query, con))
+                {
+                    cmd.Parameters.AddWithValue("@Nombre", nuevoAlumno.Nombre);
+
+                    cmd.Parameters.AddWithValue("@Apellido", string.IsNullOrEmpty(nuevoAlumno.Apellido) ? "Sin Asignar" : nuevoAlumno.Apellido);
+                    cmd.Parameters.AddWithValue("@Edad", nuevoAlumno.Edad == 0 ? 18 : nuevoAlumno.CarreraId);
+                    cmd.Parameters.AddWithValue("@CarreraId", nuevoAlumno.CarreraId == 0 ? 1 : nuevoAlumno.CarreraId);
+                    cmd.Parameters.AddWithValue("@GrupoId", nuevoAlumno.GrupoId == 0 ? 1 : nuevoAlumno.GrupoId);
+
+                    cmd.ExecuteNonQuery();
+                }
+            }
         }
     }
 }
-            
-
-
-           
+                                
